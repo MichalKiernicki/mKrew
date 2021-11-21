@@ -45,7 +45,7 @@ class UserServiceTest {
 
         when(userRepository.findById(id)).thenReturn(Optional.of(userEntity));
 
-        final Optional<UserDto> expected = userService.getUser(id);
+        Optional<UserDto> expected = userService.getUser(id);
 
         assertThat(expected).isNotNull();
     }
