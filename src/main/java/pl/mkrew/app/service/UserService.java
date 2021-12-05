@@ -50,7 +50,7 @@ public class UserService {
                 + user.getName()
                 + ". Założyłeś konto w serwisie mKrew. Przesyłamy link aktywacyjny, który jest ważny 15min "
                 + "http://localhost:8080/v1/user/confirmation/"
-                + user.getConfirmationId()); //TODO: wysyłka maila powinna być osobno bo zamula endpoint. poszukać jak zrobić żeby było 30 wątków do obsługi maila
+                + user.getConfirmationId());
     }
 
     public Optional<UserDto> getUser(Long userId) {
@@ -63,7 +63,7 @@ public class UserService {
     }
 
     public void confirmUser(UUID confirmationId) {
-        Optional<UserEntity> user = userRepository.findByConfirmationId(confirmationId);
+        Optional<pl.mkrew.app.domain.UserEntity> user = userRepository.findByConfirmationId(confirmationId);
         user.ifPresent(u -> {
             u.setConfirmationStatus(true);
             userRepository.save(u);
@@ -71,14 +71,53 @@ public class UserService {
         user.orElseThrow();
     }
 
-    public void resetPasswordForUser(Long userId, String oldPassword, String newPassword) {
+    public void changePasswordForUser(Long userId, String oldPassword, String newPassword, UserDto userDto) {
         UserEntity user = userRepository.findById(userId)
                 .get();
         if (encoder.matches(oldPassword, user.getPassword())) {
             user.setPassword(encoder.encode(newPassword));
             userRepository.save(user);
         } else {
-            throw new BadCredentialsException("Incorrect old password");
+            throw new BadCredentialsException("Błędne stare hasło");
         }
+    }
+
+    public void changePersonalData(Long userId,UserDto userDto) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow();
+        user.setSurname(userDto.getSurname());
+        user.setLogin(userDto.getLogin());
+        user.setEmail(userDto.getEmail());
+        user.setName(userDto.getName());
+        user.setPhoneNumber(userDto.getPhoneNumber());
+        user.setRckik(userDto.getRckik());
+        userRepository.save(user);
+
+    }
+
+    public Optional findUserByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
+
+    public Optional findUserByResetToken(String resetToken) {
+        return userRepository.findByResetToken(resetToken);
+    }
+
+
+    public void save(UserEntity userEntity) {
+        userRepository.save(userEntity);
+    }
+
+    public void deleteUser(Long userId) {
+        Optional<pl.mkrew.app.domain.UserEntity> user = userRepository.findById(userId);
+        user.ifPresent(u -> {
+            u.setConfirmationStatus(false);
+            u.setEnabled(false);
+            u.setRoles(null);
+            userRepository.save(u);
+        });
+        user.orElseThrow();
+
     }
 }
